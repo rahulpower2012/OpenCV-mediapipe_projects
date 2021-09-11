@@ -1,0 +1,6 @@
+#-----------------excluded files and folder----------------#
+#IDE files
+*/.idea
+
+#Test videos - You may copy your own test videos here or you can use the camera directly
+/*/TestVideos/*.mp4
