@@ -1,7 +1,7 @@
 import cv2
 import mediapipe as mp
 import time
-
+import math
 
 class handDetector():
     def __init__(self, mode=False, maxHands=2, detectionCon=0.5, trackCon=0.5):
@@ -34,17 +34,30 @@ class handDetector():
 
     def findPosition(self, img, handNo=0, draw=True):
         self.lmList = []
+        self.xList = []
+        self.yList = []
+        self.bbox = []
         if self.results.multi_hand_landmarks:
             myHand = self.results.multi_hand_landmarks[handNo]
             for id, lm in enumerate(myHand.landmark):
                 # print(id, lm)
                 h, w, c = img.shape
                 cx, cy = int(lm.x * w), int(lm.y * h)
+                self.xList.append(cx)
+                self.yList.append(cy)
                 self.lmList.append([id, cx, cy])
                 if draw:
                     cv2.circle(img, (cx, cy), 7, (255, 0, 0), cv2.FILLED)
+            xmin, xmax = min(self.xList), max(self.xList)
+            ymin, ymax = min(self.yList), max(self.yList)
+            self.bbox = xmin, ymin, xmax, ymax
 
-        return self.lmList
+            if draw:
+                cv2.rectangle(img, (xmin-20, ymin-20),
+                              (xmax+20,ymax+20), (0,255,0),2)
+
+
+        return self.lmList, self.bbox
 
     def fingersUp(self):
         fingers = []
@@ -59,6 +72,18 @@ class handDetector():
             else:
                 fingers.append(0)
         return fingers
+
+    def findDistance(self,img,tip1, tip2, draw=True):
+        x1, y1 = self.lmList[tip1][1], self.lmList[tip1][2]
+        x2, y2 = self.lmList[tip2][1], self.lmList[tip2][2]
+        length = math.hypot(x2 - x1, y2 - y1)
+        cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
+        if draw:
+            cv2.line(img, (x1, y1), (x2, y2), (255, 0, 255), 3)
+            cv2.circle(img, (x1, y1), 15, (255, 0, 255), cv2.FILLED)
+            cv2.circle(img, (x2, y2), 15, (255, 0, 255), cv2.FILLED)
+            cv2.circle(img, (cx, cy), 15, (255, 0, 255), cv2.FILLED)
+        return length, img, [x1,y1,x2,y2,cx,cy]
 
 
 def main():
